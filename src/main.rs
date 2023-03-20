@@ -20,12 +20,10 @@ struct Field {
 }
 
 impl Field {
-    pub fn new() -> Self {
+    pub fn new(field: &str) -> Self {
         let mut temp = [[0; 9]; 9];
-        for x in 0..9 {
-            for y in 0..9 {
-                temp[x][y] = 1 << ((x + y * 9) as u16 % 16);
-            }
+        for (i, c) in field.chars().enumerate() {
+            temp[i % 9][i / 9] = 1 << ((c as u16 - '0' as u16) % 16);
         }
 
         Self { data: temp }
@@ -85,18 +83,22 @@ impl Field {
         println!("└───┴───┴───┸───┴───┴───┸───┴───┴───┘");
     }
 
-    fn find_missing(&self, x: usize, y: usize) {
-        let inv_row = !self.get_x_line(x);
-        let inv_col = !self.get_y_line(y);
-        let inv_cel = !self.get_cell(x, y);
+    fn find_missing(&self, x: usize, y: usize) -> u16 {
+        let inv_row = self.get_x_line(y);
+        let inv_col = self.get_y_line(x);
+        let inv_cel = self.get_cell(x, y);
         let sum = 0b0111111111 & inv_row & inv_col & inv_cel;
+        sum & 0xfffe // Remove zero from list
     }
 }
 
 fn main() {
-    let fd = Field::new();
+    let game_str_2 =
+        "605790301402180009907032080804325107090861042500907800079603400150470236006008975";
+
+    let fd = Field::new(&game_str_2);
     println!("Sudoku Solver!");
 
     fd.print();
-    //fd.find_missing(0, 0);
+    println!("{:?}", fd.find_missing(1, 0));
 }
