@@ -1,14 +1,14 @@
 #![allow(unused)]
-//use std::collections::HashSet;
+use std::collections::HashSet;
 
 trait PrintElement {
     fn print_element(&self) -> String;
 }
 
-impl PrintElement for u8 {
+impl PrintElement for u16 {
     fn print_element(&self) -> String {
-        if *self != 0 {
-            format!(" {:1x} ", *self)
+        if *self != 1 {
+            format!(" {:1x} ", self.trailing_zeros())
         } else {
             format!("   ")
         }
@@ -16,7 +16,7 @@ impl PrintElement for u8 {
 }
 
 struct Field {
-    data: [[u8; 9]; 9],
+    data: [[u16; 9]; 9],
 }
 
 impl Field {
@@ -24,36 +24,40 @@ impl Field {
         let mut temp = [[0; 9]; 9];
         for x in 0..9 {
             for y in 0..9 {
-                temp[x][y] = (x + y * 9) as u8 % 16;
+                temp[x][y] = 1 << ((x + y * 9) as u16 % 16);
             }
         }
 
         Self { data: temp }
     }
 
-    pub fn get_x_line(&self, x_line: usize) -> [u8; 9] {
-        let mut temp: [u8; 9] = [0; 9];
+    pub fn get_x_line(&self, y_line: usize) -> u16 {
+        let mut temp: u16 = 0;
         for x in 0..9 {
-            temp[x] = self.data[x][x_line];
+            temp |= self.data[x][y_line];
         }
         temp
     }
-    pub fn get_y_line(&self, y_line: usize) -> [u8; 9] {
-        self.data[y_line]
+    pub fn get_y_line(&self, x_line: usize) -> u16 {
+        let mut temp: u16 = 0;
+        for y in 0..9 {
+            temp |= self.data[x_line][y];
+        }
+        temp
     }
 
-    // Get cell. Cell started from 0 to 8 and from row/col = 0
+    // Get cell
     // 0, 1, 2  [0..3][0..3], [3..6][0..3], [6..8][0..3]
     // 3, 4, 5  [0..3][3..6], [3..6][3..6], [6..8][3..6]
     // 6, 7, 8  [0..3][6..9], [3..6][6..9], [6..8][6..9]
-    pub fn get_cell(&self, cell: usize) -> [u8; 9] {
-        let mut temp: [u8; 9] = [0; 9];
-        let x_line = (cell % 3) * 3;
-        let y_line = (cell / 3) * 3;
+    pub fn get_cell(&self, x: usize, y: usize) -> u16 {
+        let mut temp: u16 = 0;
+        let x_line = (x % 3) * 3;
+        let y_line = (y % 3) * 3;
 
         for y in 0..3 {
             for x in 0..3 {
-                temp[y * 3 + x] = self.data[x_line + x][y_line + y];
+                temp |= self.data[x_line + x][y_line + y];
             }
         }
         temp
@@ -80,6 +84,13 @@ impl Field {
         }
         println!("└───┴───┴───┸───┴───┴───┸───┴───┴───┘");
     }
+
+    fn find_missing(&self, x: usize, y: usize) {
+        let inv_row = !self.get_x_line(x);
+        let inv_col = !self.get_y_line(y);
+        let inv_cel = !self.get_cell(x, y);
+        let sum = 0b0111111111 & inv_row & inv_col & inv_cel;
+    }
 }
 
 fn main() {
@@ -87,5 +98,5 @@ fn main() {
     println!("Sudoku Solver!");
 
     fd.print();
-    println!("{:?}", fd.get_cell(3));
+    //fd.find_missing(0, 0);
 }
