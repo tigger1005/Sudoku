@@ -1,5 +1,4 @@
 #![allow(unused)]
-use std::collections::HashSet;
 
 trait PrintElement {
     fn print_element(&self) -> String;
@@ -83,12 +82,78 @@ impl Field {
         println!("└───┴───┴───┸───┴───┴───┸───┴───┴───┘");
     }
 
-    fn find_missing(&self, x: usize, y: usize) -> u16 {
+    fn get_missing_set(&self, x: usize, y: usize) -> u16 {
         let inv_row = self.get_x_line(y);
         let inv_col = self.get_y_line(x);
         let inv_cel = self.get_cell(x, y);
         let sum = 0b0111111111 & inv_row & inv_col & inv_cel;
         sum & 0xfffe // Remove zero from list
+    }
+
+    fn solve_singles(&mut self) -> isize {
+        let mut count: isize = 0;
+        loop {
+            count = 0;
+
+            let mut changed = false;
+            for x in 0..9 {
+                for y in 0..9 {
+                    if self.data[x][y] == 0x01 {
+                        let set = self.get_missing_set(x, y);
+                        let set_count = set.count_ones();
+                        count += set_count as isize;
+                        // Check if there is an error in the puzzle
+                        if set_count == 0 {
+                            return -1;
+                        }
+                        // Check if only one is missing
+                        if set_count == 1 {
+                            // Yes, solve
+                            self.data[x][y] = set;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            if changed == false {
+                break;
+            }
+        }
+        // return count value : 0 sudoku solved / > 0 open fields / -1 wrong solution
+        count
+    }
+
+    // Get best fitting set
+    // if set is 0
+    fn get_best_set(&mut self) -> (usize, usize, u16) {
+        for x in 0..9 {
+            for y in 0..9 {
+                if self.data[x][y] == 0x01 {
+                    let set = self.get_missing_set(x, y);
+                    let set_count = set.count_ones();
+                    // Check if there is an error in the puzzle
+                    if set_count == 0 {
+                        return (0, 0, 0);
+                    }
+                    // Check if only one is missing
+                    if set_count == 1 {
+                        // Yes, solve
+                        return (x, y, set);
+                    }
+                }
+            }
+        }
+        (0, 0, 0)
+    }
+
+    // Solve sudoku
+    fn solve(&mut self) -> isize {
+        // Solve all singles
+        let ret = self.solve_singles();
+        if ret > 0 {
+            // Not all could be solved
+        }
+        ret
     }
 }
 
